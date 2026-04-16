@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roky's Market | Ultra Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --card-bg: rgba(20, 24, 30, 0.7);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --success: #00ff9d;
+            --warning: #ffcc00;
+            --danger: #ff4d4d;
+            --accent: #7000ff;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- BACKGROUND ANIMATIONS --- */
+        .bg-wrapper {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #111, #000);
+        }
+
+        .blob {
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(112, 0, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: move 20s infinite alternate;
+        }
+
+        @keyframes move {
+            from { transform: translate(-20%, -20%); }
+            to { transform: translate(20%, 20%); }
+        }
+
+        /* --- TITLE ANIMATION --- */
+        .shimmer {
+            font-size: 3.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, #7000ff, #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        /* --- CONTAINER & CARDS --- */
+        .container {
+            width: 95%;
+            max-width: 900px;
+            padding: 60px 0;
+            z-index: 1;
+        }
+
+        /* Dynamic Overall Status */
+        .overall-status {
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(15px);
+            transition: all 0.5s ease;
+        }
+
+        /* Styles for the JS to toggle */
+        .status-all-good {
+            background: rgba(0, 255, 157, 0.05);
+            border: 1px solid var(--success);
+            color: var(--success);
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
+            animation: pulse-green 2s infinite alternate;
+        }
+
+        .status-issue {
+            background: rgba(255, 77, 77, 0.05);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            box-shadow: 0 0 30px rgba(255, 77, 77, 0.1);
+            animation: pulse-red 2s infinite alternate;
+        }
+
+        @keyframes pulse-green { from { box-shadow: 0 0 10px rgba(0, 255, 157, 0.1); } to { box-shadow: 0 0 25px rgba(0, 255, 157, 0.3); } }
+        @keyframes pulse-red { from { box-shadow: 0 0 10px rgba(255, 77, 77, 0.1); } to { box-shadow: 0 0 25px rgba(255, 77, 77, 0.3); } }
+
+        .systems-grid {
+            display: grid;
+            gap: 25px;
+        }
+
+        .system-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .system-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            background: rgba(30, 35, 45, 0.8);
+        }
+
+        .system-info h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #fff;
+        }
+
+        .system-info p {
+            margin: 8px 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* --- STATUS BADGE ENGINE --- */
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .dot::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            animation: ping 1.5s infinite;
+        }
+
+        @keyframes ping {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        /* Online */
+        .system-card[data-status="online"] .status-badge { background: rgba(0, 255, 157, 0.1); color: var(--success); border-color: rgba(0, 255, 157, 0.2); }
+        .system-card[data-status="online"] .dot, .system-card[data-status="online"] .dot::before { background: var(--success); }
+        .system-card[data-status="online"] .status-badge::after { content: "Operational"; }
+
+        /* Maintenance */
+        .system-card[data-status="maintenance"] .status-badge { background: rgba(255, 204, 0, 0.1); color: var(--warning); border-color: rgba(255, 204, 0, 0.2); }
+        .system-card[data-status="maintenance"] .dot, .system-card[data-status="maintenance"] .dot::before { background: var(--warning); }
+        .system-card[data-status="maintenance"] .status-badge::after { content: "Maintenance"; }
+
+        /* Offline */
+        .system-card[data-status="offline"] .status-badge { background: rgba(255, 77, 77, 0.1); color: var(--danger); border-color: rgba(255, 77, 77, 0.2); }
+        .system-card[data-status="offline"] .dot, .system-card[data-status="offline"] .dot::before { background: var(--danger); }
+        .system-card[data-status="offline"] .status-badge::after { content: "Offline"; }
+
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Entrance Timings */
+        .system-card:nth-child(1) { animation-delay: 0.2s; }
+        .system-card:nth-child(2) { animation-delay: 0.3s; }
+        .system-card:nth-child(3) { animation-delay: 0.4s; }
+        .system-card:nth-child(4) { animation-delay: 0.5s; }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-wrapper">
+        <div class="blob"></div>
+        <div class="blob" style="right: 0; bottom: 0; animation-delay: -5s; background: radial-gradient(circle, rgba(0, 255, 157, 0.1) 0%, transparent 70%);"></div>
+    </div>
+
+    <div class="container">
+        <header style="margin-bottom: 60px;">
+            <h1 class="shimmer">Roky's Market</h1>
+            <p style="color: var(--text-muted); font-weight: 600; text-align: center; letter-spacing: 3px;">SYSTEM ARCHITECTURE LIVE TELEMETRY</p>
+        </header>
+
+        <div id="main-status-bar" class="overall-status status-all-good">
+            All Systems Operational
+        </div>
+
+        <div class="systems-grid">
+            
+            <div class="system-card" data-status="online">
+                <div class="system-info">
+                    <h3>Admin Abuse System</h3>
+                    <p>Complete system for your Admin Abuses ingame.</p>
+                </div>
+                <div class="status-badge"><div class="dot"></div></div>
+            </div>
+
+            <div class="system-card" data-status="online">
+                <div class="system-info">
+                    <h3>Battle Pass System</h3>
+                    <p>Fully working pass with rewards and XP.</p>
+                </div>
+                <div class="status-badge"><div class="dot"></div></div>
+            </div>
+
+            <div class="system-card" data-status="online">
+                <div class="system-info">
+                    <h3>Security System</h3>
+                    <p>Prevent people from leaking your files.</p>
+                </div>
+                <div class="status-badge"><div class="dot"></div></div>
+            </div>
+
+            <div class="system-card" data-status="online">
+                <div class="system-info">
+                    <h3>Spin Wheel System</h3>
+                    <p>Fully Wheel Spinner system.</p>
+                </div>
+                <div class="status-badge"><div class="dot"></div></div>
+            </div>
+
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Roky's Market. All rights reserved.</p>
+            <p style="font-size: 0.8rem; opacity: 0.7;">Refreshes every 60 seconds</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple logic to check if any system is NOT online
+        function updateGlobalStatus() {
+            const cards = document.querySelectorAll('.system-card');
+            const mainBar = document.getElementById('main-status-bar');
+            let hasIssue = false;
+            let hasMaintenance = false;
+
+            cards.forEach(card => {
+                const status = card.getAttribute('data-status');
+                if (status === 'offline') hasIssue = true;
+                if (status === 'maintenance') hasMaintenance = true;
+            });
+
+            if (hasIssue) {
+                mainBar.textContent = "Some systems are currently offline";
+                mainBar.className = "overall-status status-issue";
+            } else if (hasMaintenance) {
+                mainBar.textContent = "Some systems are under maintenance";
+                mainBar.className = "overall-status status-issue"; // You can make a separate orange class if you want
+                mainBar.style.borderColor = "var(--warning)";
+                mainBar.style.color = "var(--warning)";
+            } else {
+                mainBar.textContent = "All Systems Operational";
+                mainBar.className = "overall-status status-all-good";
+                mainBar.style = ""; // reset styles
+            }
+        }
+
+        // Run on load
+        updateGlobalStatus();
+    </script>
+</body>
+</html>
